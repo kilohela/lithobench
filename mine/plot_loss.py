@@ -19,12 +19,11 @@ def plot_loss_curve(checkpoint_path, output_path):
         return
     
     num_steps = len(logger['train_loss'])
-    num_epochs = len(logger['val_loss'])
     val_steps_interval = logger['val_steps_interval']
 
     plt.figure(figsize=(10, 5))
     plt.plot(range(1, num_steps + 1), logger['train_loss'], label='Train Loss')
-    plt.plot(range(1, num_epochs + 1, val_steps_interval), logger['val_loss'], label='Validation Loss')
+    plt.plot(range(val_steps_interval, num_steps + 1, val_steps_interval), logger['val_loss'], label='Validation Loss')
     plt.xlabel('Steps')
     plt.ylabel('Loss')
     plt.title(f'Loss Curve of {os.path.basename(checkpoint_path)}')
