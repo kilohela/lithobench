@@ -228,5 +228,5 @@ class UnetBackbone(ModelILT):
         print(f"🟢 Saved best model to {filenames}")
 
     def load(self, filenames): 
-        self.nn.load_state_dict(torch.load(filenames)["model"])
+        self.nn.load_state_dict(torch.load(filenames))
         print(f"🟢 Loaded model from {filenames}")
