@@ -226,3 +226,7 @@ class UnetBackbone(ModelILT):
         best_nn = torch.load(self.best_checkpoint)["model"]
         torch.save(best_nn, filenames)
         print(f"🟢 Saved best model to {filenames}")
+
+    def load(self, filenames): 
+        self.nn.load_state_dict(torch.load(filenames)["model"])
+        print(f"🟢 Loaded model from {filenames}")
