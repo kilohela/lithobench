@@ -305,11 +305,11 @@ class UnetBackbone(ModelILT):
                         "logger": logger
                     },
                     path)
-            save_checkpoint(self.latest_checkpoint)
+            save_checkpoint(self.latest_checkpoint_posttrain)
             if avg_loss < best_val_loss:
                 best_val_loss = avg_loss
                 print(f"🟢 New best validation loss: {color.GREEN}{avg_loss:.4f}{color.RESET}")
-                save_checkpoint(self.best_checkpoint)
+                save_checkpoint(self.best_checkpoint_posttrain)
             else:
                 print(f"🔴 Validation loss did not improve: {color.RED}{avg_loss:.4f}{color.RESET}")
 
@@ -319,7 +319,7 @@ class UnetBackbone(ModelILT):
             return torch.sigmoid(self.nn(target)[0, 0]).detach()
 
     def save(self, filenames):
-        best_nn = torch.load(self.best_checkpoint)["model"]
+        best_nn = torch.load(self.best_checkpoint_posttrain)["model"]
         torch.save(best_nn, filenames)
         print(f"🟢 Saved best model to {filenames}")
 
