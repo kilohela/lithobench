@@ -254,7 +254,7 @@ class UnetBackbone(ModelILT):
                 
                 # Forward pass
                 with autocast(self.device.type):
-                    printedNom, printedMax, printedMin = self.simLitho(F.sigmoid(self.nn(target)).squeeze(1)).squeeze(1)
+                    printedNom, printedMax, printedMin = self.simLitho(F.sigmoid(self.nn(target)).squeeze(1).squeeze(1))
                     loss_l2 = F.mse_loss(printedNom, target)
                     loss_pvb = F.mse_loss(printedMax, printedMin)
                     loss = loss_l2 + loss_pvb
