@@ -41,7 +41,7 @@ if __name__ == "__main__":
     
     Benchmark = args.benchmark
     ImageSize = (1024, 1024)
-    if args.model in ["GANOPC", "LithoGAN", "UnetBackbone"]: 
+    if args.model in ["GANOPC", "LithoGAN", "UnetBackbone", "UPP"]: 
         ImageSize = (256, 256)
     elif args.model in ["NeuralILT", ]: 
         ImageSize = (512, 512)
