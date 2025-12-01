@@ -135,7 +135,7 @@ class UPP(ModelILT):
     def name(self): 
         return self._name
 
-    def pretrain(self, train_loader, val_loader, epochs=40): 
+    def pretrain(self, train_loader, val_loader, epochs=60): 
         criterion = F.binary_cross_entropy_with_logits
         optimizer = optim.AdamW(self.nn.parameters(), lr=1e-3)
         scheduler = cosine_warmup_scheduler(optimizer, warmup_steps=epochs*len(train_loader)*0.1, total_steps=epochs*len(train_loader))
