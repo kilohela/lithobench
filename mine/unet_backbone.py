@@ -254,7 +254,7 @@ class UnetBackbone(ModelILT):
                 
                 # Forward pass
                 with autocast(self.device.type):
-                    printedNom, printedMax, printedMin = self.simLitho(F.sigmoid(self.nn(target)).squeeze(1).squeeze(1))
+                    printedNom, printedMax, printedMin = self.simLitho(F.sigmoid(self.nn(target)).squeeze(1))
                     loss_l2 = F.mse_loss(printedNom, target)
                     loss_pvb = F.mse_loss(printedMax, printedMin)
                     loss = loss_l2 + loss_pvb
@@ -279,12 +279,14 @@ class UnetBackbone(ModelILT):
             total = 0
             with torch.no_grad(), autocast(self.device.type):
                 progress_bar = tqdm(val_loader, desc="Evaluating", leave=False)
-                for target, mask in progress_bar:
-                    target, mask = target.to(self.device), mask.to(self.device)
-                    outputs = self.nn(target)
-                    loss = criterion(outputs, mask)
+                for target, _ in progress_bar:
+                    target = target.to(self.device)
+                    printedNom, printedMax, printedMin = self.simLitho(F.sigmoid(self.nn(target)).squeeze(1))
+                    loss_l2 = F.mse_loss(printedNom, target)
+                    loss_pvb = F.mse_loss(printedMax, printedMin)
+                    loss = loss_l2 + loss_pvb
                     total_loss += loss.item()
-                    total += mask.size(0)
+                    total += target.size(0)
                     
             avg_loss = total_loss / len(val_loader)
             logger["val_loss"].append(avg_loss)
