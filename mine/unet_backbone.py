@@ -111,6 +111,8 @@ class UnetBackbone(ModelILT):
         self.checkpoints_dir = "./mine/checkpoints"
         self.latest_checkpoint = os.path.join(self.checkpoints_dir, self.model_name + "_latest.pth")
         self.best_checkpoint = os.path.join(self.checkpoints_dir, self.model_name + "_best.pth")
+        self.latest_checkpoint_posttrain = os.path.join(self.checkpoints_dir, self.model_name + "_latest_posttrain.pth")
+        self.best_checkpoint_posttrain = os.path.join(self.checkpoints_dir, self.model_name + "_best_posttrain.pth")
 
     @property
     def size(self): 
@@ -213,9 +215,101 @@ class UnetBackbone(ModelILT):
             else:
                 print(f"🔴 Validation loss did not improve: {color.RED}{avg_loss:.4f}{color.RESET}")
 
-    def train(self, train_loader, val_loader, epochs=1):
-        print(f"{color.YELLOW}[WARNING] Training is not implemented yet. Please implement the train method in {self.__class__.__name__}{color.RESET}")
-        pass
+    def train(self, train_loader, val_loader, epochs=40):
+        optimizer = optim.AdamW(self.nn.parameters(), lr=1e-4)
+        scheduler = cosine_warmup_scheduler(optimizer, warmup_steps=epochs*len(train_loader)*0.1, total_steps=epochs*len(train_loader))
+        scaler = GradScaler()
+        best_val_loss = float('inf')
+        start_epoch = 0
+
+        logger = {
+            "train_loss": [],
+            "val_loss": [],
+            "val_steps_interval": len(train_loader),
+        }
+
+        # load latest checkpoint if exists
+        if os.path.exists(self.latest_checkpoint_posttrain):
+            checkpoint = torch.load(self.latest_checkpoint_posttrain)
+            self.nn.load_state_dict(checkpoint['model'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            scheduler.load_state_dict(checkpoint['scheduler'])
+            scaler.load_state_dict(checkpoint['scaler'])
+            best_val_loss = checkpoint['best_val_loss']
+            logger = checkpoint['logger']
+            start_epoch = checkpoint['epoch']
+            del checkpoint
+            print("Loaded latest posttrain checkpoint")
+        else:
+            print("No latest checkpoint found, starting from pretrain model")
+            self.nn.load_state_dict(torch.load(self.best_checkpoint)['model'])
+
+        for epoch in range(start_epoch, epochs):
+            # ------------ Train ------------
+            self.nn.train()
+            progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}", leave=True)
+            total_loss = 0
+            for target, _ in progress_bar:
+                target = target.to(self.device)
+                
+                # Forward pass
+                with autocast(self.device.type):
+                    printedNom, printedMax, printedMin = self.simLitho(F.sigmoid(self.nn(target)))
+                    loss_l2 = F.mse_loss(printedNom, target)
+                    loss_pvb = F.mse_loss(printedMax, printedMin)
+                    loss = loss_l2 + loss_pvb
+                
+                # Backward and optimize
+                optimizer.zero_grad()
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+                scheduler.step()
+                logger["train_loss"].append(loss.item())
+                
+                total_loss += loss.item()
+                progress_bar.set_postfix(loss=loss.item())
+            
+            avg_loss = total_loss / len(train_loader)
+            print(f"Epoch [{epoch+1}] average training loss: {avg_loss:.4f}")
+
+            # ------------- Evaluation -----------------
+            self.nn.eval()
+            total_loss = 0
+            total = 0
+            with torch.no_grad(), autocast(self.device.type):
+                progress_bar = tqdm(val_loader, desc="Evaluating", leave=False)
+                for target, mask in progress_bar:
+                    target, mask = target.to(self.device), mask.to(self.device)
+                    outputs = self.nn(target)
+                    loss = criterion(outputs, mask)
+                    total_loss += loss.item()
+                    total += mask.size(0)
+                    
+            avg_loss = total_loss / len(val_loader)
+            logger["val_loss"].append(avg_loss)
+            # print(f"Validation Loss: {avg_loss:.4f}")
+
+            # ------------- Save checkpoint -----------------
+            def save_checkpoint(path):
+                torch.save(
+                    {
+                        "model": self.nn.state_dict(),
+                        "optimizer": optimizer.state_dict(),
+                        "scheduler": scheduler.state_dict(),
+                        "epoch": epoch+1, # +1 because we save this value in the last iteration
+                        "best_val_loss": best_val_loss,
+                        "scaler": scaler.state_dict(),
+                        "logger": logger
+                    },
+                    path)
+            save_checkpoint(self.latest_checkpoint)
+            if avg_loss < best_val_loss:
+                best_val_loss = avg_loss
+                print(f"🟢 New best validation loss: {color.GREEN}{avg_loss:.4f}{color.RESET}")
+                save_checkpoint(self.best_checkpoint)
+            else:
+                print(f"🔴 Validation loss did not improve: {color.RED}{avg_loss:.4f}{color.RESET}")
 
     def run(self, target):
         self.nn.eval()
