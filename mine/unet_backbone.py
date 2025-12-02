@@ -109,8 +109,8 @@ class UnetBackbone(ModelILT):
 
         self.model_name = "unet_backbone"
         self.checkpoints_dir = "./mine/checkpoints"
-        self.latest_checkpoint = os.path.join(self.checkpoints_dir, self.model_name + "_latest.pth")
-        self.best_checkpoint = os.path.join(self.checkpoints_dir, self.model_name + "_best.pth")
+        self.latest_checkpoint_pretrain = os.path.join(self.checkpoints_dir, self.model_name + "_latest.pth")
+        self.best_checkpoint_pretrain = os.path.join(self.checkpoints_dir, self.model_name + "_best.pth")
         self.latest_checkpoint_posttrain = os.path.join(self.checkpoints_dir, self.model_name + "_latest_posttrain.pth")
         self.best_checkpoint_posttrain = os.path.join(self.checkpoints_dir, self.model_name + "_best_posttrain.pth")
 
@@ -136,8 +136,8 @@ class UnetBackbone(ModelILT):
         }
 
         # load latest checkpoint if exists
-        if os.path.exists(self.latest_checkpoint):
-            checkpoint = torch.load(self.latest_checkpoint)
+        if os.path.exists(self.latest_checkpoint_pretrain):
+            checkpoint = torch.load(self.latest_checkpoint_pretrain)
             self.nn.load_state_dict(checkpoint['model'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             scheduler.load_state_dict(checkpoint['scheduler'])
@@ -207,11 +207,11 @@ class UnetBackbone(ModelILT):
                         "logger": logger
                     },
                     path)
-            save_checkpoint(self.latest_checkpoint)
+            save_checkpoint(self.latest_checkpoint_pretrain)
             if avg_loss < best_val_loss:
                 best_val_loss = avg_loss
                 print(f"🟢 New best validation loss: {color.GREEN}{avg_loss:.4f}{color.RESET}")
-                save_checkpoint(self.best_checkpoint)
+                save_checkpoint(self.best_checkpoint_pretrain)
             else:
                 print(f"🔴 Validation loss did not improve: {color.RED}{avg_loss:.4f}{color.RESET}")
 
@@ -242,7 +242,7 @@ class UnetBackbone(ModelILT):
             print("Loaded latest posttrain checkpoint")
         else:
             print("No latest checkpoint found, starting from pretrain model")
-            self.nn.load_state_dict(torch.load(self.best_checkpoint)['model'])
+            self.nn.load_state_dict(torch.load(self.best_checkpoint_pretrain)['model'])
 
         for epoch in range(start_epoch, epochs):
             # ------------ Train ------------
@@ -319,7 +319,10 @@ class UnetBackbone(ModelILT):
             return torch.sigmoid(self.nn(target)[0, 0]).detach()
 
     def save(self, filenames):
-        best_nn = torch.load(self.best_checkpoint_posttrain)["model"]
+        if os.path.exists(self.best_checkpoint_posttrain):
+            best_nn = torch.load(self.best_checkpoint_posttrain)["model"]
+        else:
+            best_nn = torch.load(self.latest_checkpoint_pretrain)["model"]
         torch.save(best_nn, filenames)
         print(f"🟢 Saved best model to {filenames}")
 
