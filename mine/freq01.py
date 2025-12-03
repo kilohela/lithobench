@@ -306,7 +306,7 @@ class Freq01(ModelILT):
             x = (x - mean) / std
 
             output_nn = self.nn(x)
-            s = x.size[-1] # H, W size
+            s = x.shape[-1] # H, W size
             c = s // 2
             r = self.radius
             output_nn = torch.view_as_complex(output_nn.permute(0, 2, 3, 1).contiguous())
