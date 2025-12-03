@@ -116,15 +116,16 @@ class Freq01(ModelILT):
                 mean = x.mean()
                 std = x.std() + 1e-6
                 x = (x - mean) / std
-                c = self.size[-1] // 2
-                r = self.radius
-                y = torch.fft.fftshift(torch.fft.fft2(y))[..., c-r:c+r, c-r:c+r]
-                y = torch.cat([torch.real(y), torch.imag(y)], dim=1)
 
                 # Forward pass
                 with autocast(self.device.type):
-                    outputs = self.nn(x)
-                    loss = criterion(outputs, y)
+                    output_nn = self.nn(x)
+                    c = self.size[-1] // 2
+                    r = self.radius
+                    y_pred = torch.zeros_like(y)
+                    y_pred[:, :, c-r:c+r, c-r:c+r] = output_nn
+                    y_pred = torch.fft.ifft2(torch.fft.ifftshift(y_pred))
+                    loss = criterion(y_pred, y)
                 
                 # Backward and optimize
                 optimizer.zero_grad()
@@ -153,14 +154,15 @@ class Freq01(ModelILT):
                     mean = x.mean()
                     std = x.std() + 1e-6
                     x = (x - mean) / std
-                    c = self.size[-1] // 2
-                    r = self.radius
-                    y = torch.fft.fftshift(torch.fft.fft2(y))[..., c-r:c+r, c-r:c+r]
-                    y = torch.cat([torch.real(y), torch.imag(y)], dim=1)
 
                     with autocast(self.device.type):
-                        outputs = self.nn(x)
-                        loss = criterion(outputs, y)
+                        output_nn = self.nn(x)
+                        c = self.size[-1] // 2
+                        r = self.radius
+                        y_pred = torch.zeros_like(y)
+                        y_pred[:, :, c-r:c+r, c-r:c+r] = output_nn
+                        y_pred = torch.fft.ifft2(torch.fft.ifftshift(y_pred))
+                        loss = criterion(y_pred, y)
 
                     total_loss += loss.item()
                     
