@@ -356,4 +356,14 @@ if __name__ == "__main__":
     model = Freq02()
     model.pretrain(train_loader, val_loader, epochs=40)
     Folder = os.path.join("dev", "MetalSet_Freq02")
-    model.evaluate("MetalSet", finetune=False, folder=Folder)
+
+    targets = evaluate.getTargets(samples=None, dataset="MetalSet")
+    model.evaluate(targets, finetune=False, folder=Folder)
+
+    model.train(train_loader, val_loader, epochs=40)
+    model.evaluate(targets, finetune=False, folder=Folder)
+
+    # evaluate on StdMetal
+    Folder = os.path.join("saved", "StdMetal_Freq02")
+    targets = evaluate.getTargets(samples=None, dataset="StdMetal")
+    model.evaluate(targets, finetune=False, folder=Folder)
