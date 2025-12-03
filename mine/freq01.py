@@ -317,7 +317,7 @@ if __name__ == "__main__":
     """
     directly run this file to pretrain the model
     """
-    train_loader, val_loader = loadersILT("MetalSet", (2048, 2048), batch_size=24, njobs=4)
+    train_loader, val_loader = loadersILT("MetalSet", (2048, 2048), batch_size=24, njobs=8)
     model = Freq01()
     model.pretrain(train_loader, val_loader, epochs=5)
     Folder = os.path.join("dev", "MetalSet_Freq01")
