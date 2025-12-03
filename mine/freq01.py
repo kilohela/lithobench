@@ -298,14 +298,16 @@ class Freq01(ModelILT):
     def run(self, target):
         self.nn.eval()
         with torch.no_grad(), autocast(self.device.type):
-            target_fft = torch.fft.fftshift(torch.fft.fft(target))
-            mask_fft_lowpass = self.nn(target_fft)[0, 0]
-            mask_fft = torch.zeros((1, 1, 2048, 2048), device=self.device)
-            center = 1024
-            radius = 32
-            mask_fft[:, :, center - radius:center + radius, center - radius:center + radius] = mask_fft_lowpass
-            mask = torch.fft.ifft(torch.fft.ifftshift(mask_fft))
-            return mask[0, 0].detach()
+            x = target.to(self.device)
+            output_nn = self.nn(x)
+            s = x.size[-1] # H, W size
+            c = s // 2
+            r = self.radius
+            output_nn = torch.view_as_complex(output_nn.permute(0, 2, 3, 1).contiguous())
+            y_pred = torch.view_as_complex(torch.zeros_like(x).permute(0, 2, 3, 1).contiguous())
+            y_pred[:, c-r:c+r, c-r:c+r] = output_nn
+            y_pred = torch.abs(torch.fft.ifft2(torch.fft.ifftshift(y_pred))).unsqueeze(1)
+            return y_pred[0, 0].detach()
 
     def save(self, filenames):
         if os.path.exists(self.best_checkpoint_posttrain):
@@ -316,7 +318,7 @@ class Freq01(ModelILT):
         print(f"🟢 Saved best model to {filenames}")
 
     def load(self, filenames): 
-        self.nn.load_state_dict(torch.load(filenames))
+        self.nn.load_state_dict(torch.load(filenames)["model"])
         print(f"🟢 Loaded model from {filenames}")
 
 if __name__ == "__main__":

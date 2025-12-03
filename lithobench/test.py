@@ -15,6 +15,7 @@ from litho.damolitho import DAMOLitho
 from litho.cfnolitho import CFNOLitho
 from mine.unet_backbone import UnetBackbone
 from mine.unetpp import UPP
+from mine.freq01 import Freq01
 
 # Example: python3 lithobench/test.py -m lithobench/ilt/neuralilt.py -a NeuralILT -i 512 -t ILT -o dev -s MetalSet -l saved/MetalSet_NeuralILT/net.pth
 def parseArgs(): 
@@ -94,6 +95,8 @@ if __name__ == "__main__":
         model = UnetBackbone(size=ImageSize)
     elif args.model == "UPP":
         model = UPP(size=ImageSize)
+    elif args.model == "Freq01":
+        model = Freq01(size=ImageSize)
     else: 
         if not os.path.exists(args.model): 
             assert False, f"[ERROR]: Unsupported model: {args.model}"
