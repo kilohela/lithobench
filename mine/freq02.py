@@ -354,9 +354,15 @@ if __name__ == "__main__":
     """
     train_loader, val_loader = loadersILT("MetalSet", (256, 256), batch_size=24, njobs=8)
     model = Freq02()
-    model.pretrain(train_loader, val_loader, epochs=40)
     Folder = os.path.join("dev", "MetalSet_Freq02")
 
+    # evaluate the randomly initialized model
+    targets = evaluate.getTargets(samples=None, dataset="MetalSet")
+    model.evaluate(targets, finetune=False, folder=Folder)
+
+    model.pretrain(train_loader, val_loader, epochs=40)
+
+    # evaluate the pretrained model
     targets = evaluate.getTargets(samples=None, dataset="MetalSet")
     model.evaluate(targets, finetune=False, folder=Folder)
 
