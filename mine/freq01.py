@@ -299,6 +299,12 @@ class Freq01(ModelILT):
         self.nn.eval()
         with torch.no_grad(), autocast(self.device.type):
             x = target.to(self.device)
+            x = torch.fft.fftshift(torch.fft.fft2(x))
+            x = torch.cat([torch.real(x), torch.imag(x)], dim=1)
+            mean = x.mean()
+            std = x.std() + 1e-6
+            x = (x - mean) / std
+
             output_nn = self.nn(x)
             s = x.size[-1] # H, W size
             c = s // 2
