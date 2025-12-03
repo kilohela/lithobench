@@ -34,7 +34,7 @@ def plot_loss_curve(checkpoint_path, baseline_path, output_path):
     plt.plot(range(val_steps_interval, num_steps + 1, val_steps_interval), logger['val_loss'], label='Validation Loss')
     if baseline_logger is not None:
         plt.plot(range(1, len(baseline_logger['train_loss']) + 1), baseline_logger['train_loss'], label='Baseline Train Loss')
-        plt.plot(range(baseline_logger['val_steps_interval'], len(baseline_logger['val_loss']) + 1, baseline_logger['val_steps_interval']), baseline_logger['val_loss'], label='Baseline Validation Loss')
+        plt.plot(range(baseline_logger['val_steps_interval'], len(baseline_logger['train_loss']) + 1, baseline_logger['val_steps_interval']), baseline_logger['val_loss'], label='Baseline Validation Loss')
     plt.xlabel('Steps')
     plt.ylabel('Loss')
     plt.title(f'Loss Curve of {os.path.basename(checkpoint_path)}')
