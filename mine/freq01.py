@@ -120,11 +120,13 @@ class Freq01(ModelILT):
                 # Forward pass
                 with autocast(self.device.type):
                     output_nn = self.nn(x)
-                    c = self.size[-1] // 2
+                    s = self.size[-1] # H, W size
+                    c = s // 2
                     r = self.radius
-                    y_pred = torch.zeros_like(y)
-                    y_pred[:, :, c-r:c+r, c-r:c+r] = output_nn
-                    y_pred = torch.fft.ifft2(torch.fft.ifftshift(y_pred))
+                    output_nn = torch.view_as_complex(output_nn.permute(0, 2, 3, 1).contiguous())
+                    y_pred = torch.view_as_complex(torch.zeros_like(x).permute(0, 2, 3, 1).contiguous())
+                    y_pred[:, c-r:c+r, c-r:c+r] = output_nn
+                    y_pred = torch.abs(torch.fft.ifft2(torch.fft.ifftshift(y_pred))).unsqueeze(1)
                     loss = criterion(y_pred, y)
                 
                 # Backward and optimize
@@ -157,13 +159,15 @@ class Freq01(ModelILT):
 
                     with autocast(self.device.type):
                         output_nn = self.nn(x)
-                        c = self.size[-1] // 2
+                        s = self.size[-1] # H, W size
+                        c = s // 2
                         r = self.radius
-                        y_pred = torch.zeros_like(y)
-                        y_pred[:, :, c-r:c+r, c-r:c+r] = output_nn
-                        y_pred = torch.fft.ifft2(torch.fft.ifftshift(y_pred))
+                        output_nn = torch.view_as_complex(output_nn.permute(0, 2, 3, 1).contiguous())
+                        y_pred = torch.view_as_complex(torch.zeros_like(x).permute(0, 2, 3, 1).contiguous())
+                        y_pred[:, c-r:c+r, c-r:c+r] = output_nn
+                        y_pred = torch.abs(torch.fft.ifft2(torch.fft.ifftshift(y_pred))).unsqueeze(1)
                         loss = criterion(y_pred, y)
-
+                    
                     total_loss += loss.item()
                     
             avg_loss = total_loss / len(val_loader)
