@@ -21,7 +21,7 @@ def plot_loss_curve(checkpoint_path, baseline_path, output_path):
     try:
         checkpoint = torch.load(checkpoint_path)
         logger = checkpoint['logger']
-        baseline_logger = torch.load(baseline_path)['logger'] if baseline_path is not None else None
+        baseline = torch.load(baseline_path)['logger'] if baseline_path is not None else None
     except FileNotFoundError:
         print(f"Error: Checkpoint file not found at '{checkpoint_path}'")
         return
@@ -32,9 +32,17 @@ def plot_loss_curve(checkpoint_path, baseline_path, output_path):
     plt.figure(figsize=(10, 5))
     plt.plot(range(1, num_steps + 1), logger['train_loss'], label='Train Loss')
     plt.plot(range(val_steps_interval, num_steps + 1, val_steps_interval), logger['val_loss'], label='Validation Loss')
-    if baseline_logger is not None:
-        plt.plot(range(1, len(baseline_logger['train_loss']) + 1), baseline_logger['train_loss'], label='Baseline Train Loss')
-        plt.plot(range(baseline_logger['val_steps_interval'], len(baseline_logger['train_loss']) + 1, baseline_logger['val_steps_interval']), baseline_logger['val_loss'], label='Baseline Validation Loss')
+    if baseline is not None:
+        try:
+            baseline_steps = len(baseline['train_loss'])
+            baseline_interval = baseline['val_steps_interval']
+            plt.plot(range(1, baseline_steps + 1), baseline['train_loss'], label='Baseline Train Loss')
+            plt.plot(range(baseline_interval, baseline_steps + 1, baseline_interval), baseline['val_loss'], label='Baseline Validation Loss')
+        except ValueError:
+            print(baseline_steps)
+            print(baseline_interval)
+            print(len(baseline['val_loss']))
+            
     plt.xlabel('Steps')
     plt.ylabel('Loss')
     plt.title(f'Loss Curve of {os.path.basename(checkpoint_path)}')
