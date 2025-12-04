@@ -337,7 +337,7 @@ if __name__ == "__main__":
     """
     directly run this file to train the model
     """
-    BATCH_SIZE = 32
+    BATCH_SIZE = 24
     EPOCHS = 40
     IMAGE_SIZE = (256, 256)
     TRAIN_DATASET = "MetalSet"
