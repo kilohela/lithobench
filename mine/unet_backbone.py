@@ -337,24 +337,30 @@ if __name__ == "__main__":
     """
     directly run this file to train the model
     """
-    train_loader, val_loader = loadersILT("MetalSet", (256, 256), batch_size=24, njobs=8)
-    model = UnetBackbone(size=(256, 256))
-    Folder = os.path.join("dev", "MetalSet_UnetBackbone")
+    BATCH_SIZE = 32
+    EPOCHS = 40
+    IMAGE_SIZE = (256, 256)
+    TRAIN_DATASET = "MetalSet"
+    TEST_DATASET = "StdMetal"
+    MODEL_NAME = "UnetBackbone"
+
+    train_loader, val_loader = loadersILT(TRAIN_DATASET, IMAGE_SIZE, batch_size=BATCH_SIZE, njobs=8)
+    model = UnetBackbone(size=IMAGE_SIZE)
+    Folder = os.path.join("dev", f"{TRAIN_DATASET}_{MODEL_NAME}")
 
     # evaluate the randomly initialized model
-    targets = evaluate.getTargets(samples=None, dataset="MetalSet")
+    targets = evaluate.getTargets(samples=None, dataset=TRAIN_DATASET)
     model.evaluate(targets, finetune=False, folder=Folder)
-
-    model.pretrain(train_loader, val_loader, epochs=40)
 
     # evaluate the pretrained model
-    targets = evaluate.getTargets(samples=None, dataset="MetalSet")
+    model.pretrain(train_loader, val_loader, epochs=EPOCHS)
     model.evaluate(targets, finetune=False, folder=Folder)
 
-    model.train(train_loader, val_loader, epochs=40)
+    # evaluate the posttrained model
+    model.train(train_loader, val_loader, epochs=EPOCHS)
     model.evaluate(targets, finetune=False, folder=Folder)
 
     # evaluate on StdMetal
-    Folder = os.path.join("saved", "StdMetal_UnetBackbone")
-    targets = evaluate.getTargets(samples=None, dataset="StdMetal")
+    Folder = os.path.join("saved", f"{TEST_DATASET}_{MODEL_NAME}")
+    targets = evaluate.getTargets(samples=None, dataset=TEST_DATASET)
     model.evaluate(targets, finetune=False, folder=Folder)
