@@ -1,3 +1,6 @@
+import sys
+sys.path.append(".")
+from lithobench.dataset import *
 from lithobench.model import *
 import pylitho.exact as litho
 import torch.optim as optim
@@ -329,3 +332,29 @@ class UnetBackbone(ModelILT):
     def load(self, filenames): 
         self.nn.load_state_dict(torch.load(filenames))
         print(f"🟢 Loaded model from {filenames}")
+
+if __name__ == "__main__":
+    """
+    directly run this file to train the model
+    """
+    train_loader, val_loader = loadersILT("MetalSet", (256, 256), batch_size=24, njobs=8)
+    model = UnetBackbone(size=(256, 256))
+    Folder = os.path.join("dev", "MetalSet_UnetBackbone")
+
+    # evaluate the randomly initialized model
+    targets = evaluate.getTargets(samples=None, dataset="MetalSet")
+    model.evaluate(targets, finetune=False, folder=Folder)
+
+    model.pretrain(train_loader, val_loader, epochs=40)
+
+    # evaluate the pretrained model
+    targets = evaluate.getTargets(samples=None, dataset="MetalSet")
+    model.evaluate(targets, finetune=False, folder=Folder)
+
+    model.train(train_loader, val_loader, epochs=40)
+    model.evaluate(targets, finetune=False, folder=Folder)
+
+    # evaluate on StdMetal
+    Folder = os.path.join("saved", "StdMetal_UnetBackbone")
+    targets = evaluate.getTargets(samples=None, dataset="StdMetal")
+    model.evaluate(targets, finetune=False, folder=Folder)
