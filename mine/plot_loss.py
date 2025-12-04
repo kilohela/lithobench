@@ -39,10 +39,10 @@ def plot_loss_curve(checkpoint_path, baseline_path, output_path):
             plt.plot(range(1, baseline_steps + 1), baseline['train_loss'], label='Baseline Train Loss')
             plt.plot(range(baseline_interval, baseline_steps + 1, baseline_interval), baseline['val_loss'], label='Baseline Validation Loss')
         except ValueError:
-            print(baseline_steps)
-            print(baseline_interval)
-            print(len(baseline['val_loss']))
-            
+            baseline_interval = (baseline_steps+ len(baseline['val_loss']) - 1) // len(baseline['val_loss'])
+            plt.plot(range(baseline_interval, baseline_steps + 1, baseline_interval), baseline['val_loss'], label='Baseline Validation Loss')
+            raise ValueError("Baseline file is not in the correct format.")
+
     plt.xlabel('Steps')
     plt.ylabel('Loss')
     plt.title(f'Loss Curve of {os.path.basename(checkpoint_path)}')
