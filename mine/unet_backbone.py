@@ -105,12 +105,12 @@ def cosine_warmup_scheduler(optimizer, warmup_steps, total_steps, min_lr=0.0):
     
 class UnetBackbone(ModelILT):
     def __init__(self, size=(256, 256)): 
-        super().__init__(size=size, name="DAMOILT")
+        super().__init__(size=size, name=self.__class__.__name__)
         self.simLitho = litho.LithoSim("./config/lithosimple.txt")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.nn = UNET(in_channels=1, out_channels=1, features=[64, 128, 256, 512]).to(self.device)
 
-        self.model_name = "unet_backbone"
+        self.model_name = self.__class__.__name__
         self.checkpoints_dir = "./mine/checkpoints"
         self.latest_checkpoint_pretrain = os.path.join(self.checkpoints_dir, self.model_name + "_latest.pth")
         self.best_checkpoint_pretrain = os.path.join(self.checkpoints_dir, self.model_name + "_best.pth")
