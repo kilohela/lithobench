@@ -126,13 +126,13 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module): 
-    def __init__(self): 
+    def __init__(self, size): 
         super().__init__()
         self.conv0_0 = conv_block(1, 64, kernel_size=4, stride=2, padding=1, leaky=True)
         self.conv1_0 = conv_block(64, 128, kernel_size=4, stride=1, padding='same', leaky=True)
         self.conv2_0 = conv_block(128, 1, kernel_size=4, stride=1, padding='same', leaky=True)
         self.flatten_0 = nn.Flatten()
-        self.fc0_0 = nn.Linear(512**2, 1)
+        self.fc0_0 = nn.Linear((size//2)**2, 1)
         self.sigmoid_0 = nn.Sigmoid()
         self.seq0 = nn.Sequential(self.conv0_0, self.conv1_0, self.conv2_0, self.flatten_0, self.fc0_0, self.sigmoid_0)
         
@@ -156,7 +156,7 @@ class DAMOILT(ModelILT):
         super().__init__(size=size, name="DAMOILT")
         self.simLitho = litho.LithoSim("./config/lithosimple.txt")
         self.netG = Generator()
-        self.netD = Discriminator()
+        self.netD = Discriminator(size=size[0])
         if torch.cuda.is_available():
             self.netG = self.netG.cuda()
             self.netD = self.netD.cuda()
