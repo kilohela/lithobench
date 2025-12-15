@@ -162,7 +162,7 @@ class UnetSymPP(ModelILT):
         super().__init__(size=size, name=self.__class__.__name__)
         self.simLitho = litho.LithoSim("./config/lithosimple.txt")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.nn = UnetSymPPnn(in_channels=1, out_channels=1, features=[128, 256, 512, 512]).to(self.device)
+        self.nn = UnetSymPPnn(in_channels=1, out_channels=1, features=[128, 256, 512, 1024]).to(self.device)
 
         self.model_name = self.__class__.__name__
         self.checkpoints_dir = "./mine/checkpoints"
