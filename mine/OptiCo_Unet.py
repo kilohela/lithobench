@@ -141,47 +141,48 @@ class OptiCoBlockEq567(nn.Module):
         """
         u: (B,C,H,W) 实数输入（视为 Ur），输出同形状实数特征。
         """
-        ur = u
-        # --- Eq.(5): Y_backbone(U) ---
-        n = self.norm(ur)
-        a = self.dw(n)
-        a = self.w1(a)
+        with torch.amp.autocast("cuda", enabled=False):
+            ur = u
+            # --- Eq.(5): Y_backbone(U) ---
+            n = self.norm(ur)
+            a = self.dw(n)
+            a = self.w1(a)
 
-        g = self.sigmoid(self.w2(n))
-        y_backbone = self.w3(a * g) + ur  # residual + Ur
+            g = self.sigmoid(self.w2(n))
+            y_backbone = self.w3(a * g) + ur  # residual + Ur
 
-        # --- Eq.(6): Y_phase(U) ---
-        # ComplexConv1D( Y_backbone(U) ) -> (Fr, Fi)
-        emb = self.complex_embed(y_backbone)
-        fr, fi = torch.chunk(emb, 2, dim=1)
+            # --- Eq.(6): Y_phase(U) ---
+            # ComplexConv1D( Y_backbone(U) ) -> (Fr, Fi)
+            emb = self.complex_embed(y_backbone)
+            fr, fi = torch.chunk(emb, 2, dim=1)
 
-        # OPconv(U) -> (Pr, Pi)
-        pr, pi = self._opconv(ur, ui=None)
+            # OPconv(U) -> (Pr, Pi)
+            pr, pi = self._opconv(ur, ui=None)
 
-        # Hadamard product in complex domain
-        mr, mi = complex_mul(fr, fi, pr, pi)
+            # Hadamard product in complex domain
+            mr, mi = complex_mul(fr, fi, pr, pi)
 
-        # multiply by exp(jkz)/(j*λ*z)  (λ here is wavelength)
-        k = self.k.to(device=u.device, dtype=u.dtype)
-        z = torch.tensor(self.z, device=u.device, dtype=u.dtype)
-        lam = torch.tensor(self.wavelength, device=u.device, dtype=u.dtype)
+            # multiply by exp(jkz)/(j*λ*z)  (λ here is wavelength)
+            k = self.k.to(device=u.device, dtype=u.dtype)
+            z = torch.tensor(self.z, device=u.device, dtype=u.dtype)
+            lam = torch.tensor(self.wavelength, device=u.device, dtype=u.dtype)
 
-        # exp(jkz)
-        cos_kz = torch.cos(k * z)
-        sin_kz = torch.sin(k * z)
+            # exp(jkz)
+            cos_kz = torch.cos(k * z)
+            sin_kz = torch.sin(k * z)
 
-        # divide by (j*λ*z): 1/(jA) = -j/A
-        A = torch.clamp(lam * z, min=torch.tensor(self.eps, device=u.device, dtype=u.dtype))
-        # (mr + j mi) * (cos + j sin)
-        tr, ti = complex_mul(mr, mi, cos_kz, sin_kz)
-        # multiply by (-j/A): (tr + j ti) * (0 - j/A) = (ti/A) + j(-tr/A)
-        ypr = (ti / A)
-        ypi = (-tr / A)
+            # divide by (j*λ*z): 1/(jA) = -j/A
+            A = torch.clamp(lam * z, min=torch.tensor(self.eps, device=u.device, dtype=u.dtype))
+            # (mr + j mi) * (cos + j sin)
+            tr, ti = complex_mul(mr, mi, cos_kz, sin_kz)
+            # multiply by (-j/A): (tr + j ti) * (0 - j/A) = (ti/A) + j(-tr/A)
+            ypr = (ti / A)
+            ypi = (-tr / A)
 
-        # Eq.(7): Y_OptiCo = Y_backbone + Y_phase
-        # 由于 Y_backbone 是实数，这里将 Y_phase 投影回实数（取实部）后相加
-        y_optico = y_backbone + self.phase_gain * ypr
-        return y_optico
+            # Eq.(7): Y_OptiCo = Y_backbone + Y_phase
+            # 由于 Y_backbone 是实数，这里将 Y_phase 投影回实数（取实部）后相加
+            y_optico = y_backbone + self.phase_gain * ypr
+            return y_optico
 
 
 class DoubleConvOptiCo(nn.Module):
