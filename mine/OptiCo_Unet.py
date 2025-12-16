@@ -302,9 +302,9 @@ class OptiCo_Unet(ModelILT):
     def name(self): 
         return self._name
 
-    def pretrain(self, train_loader, val_loader, epochs=40): 
+    def pretrain(self, train_loader, val_loader, epochs=8): 
         criterion = F.binary_cross_entropy_with_logits
-        optimizer = optim.AdamW(self.nn.parameters(), lr=1e-3)
+        optimizer = optim.AdamW(self.nn.parameters(), lr=1e-4)
         scheduler = cosine_warmup_scheduler(optimizer, warmup_steps=epochs*len(train_loader)*0.1, total_steps=epochs*len(train_loader))
         scaler = GradScaler()
         best_val_loss = float('inf')
@@ -396,8 +396,8 @@ class OptiCo_Unet(ModelILT):
             else:
                 print(f"🔴 Validation loss did not improve: {color.RED}{avg_loss:.4f}{color.RESET}")
 
-    def train(self, train_loader, val_loader, epochs=40):
-        optimizer = optim.AdamW(self.nn.parameters(), lr=1e-4)
+    def train(self, train_loader, val_loader, epochs=8):
+        optimizer = optim.AdamW(self.nn.parameters(), lr=1e-5)
         scheduler = cosine_warmup_scheduler(optimizer, warmup_steps=epochs*len(train_loader)*0.1, total_steps=epochs*len(train_loader))
         scaler = GradScaler()
         best_val_loss = float('inf')
